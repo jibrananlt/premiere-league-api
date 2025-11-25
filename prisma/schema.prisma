@@ -1,0 +1,74 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Model Tim (Klub)
+model Team {
+  id        Int      @id @default(autoincrement())
+  name      String
+  logo      String?
+  coach     String
+  stadium   String?
+  founded   Int?     // Tahun berdiri
+  
+  // Relasi
+  players   Player[]
+  standing  Standing?
+  
+  // Relasi Match (Home & Away)
+  homeMatches Match[] @relation("HomeTeam")
+  awayMatches Match[] @relation("AwayTeam")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// 2. Model Pemain
+model Player {
+  id        Int      @id @default(autoincrement())
+  name      String
+  position  String   // GK, DF, MF, FW
+  number    Int
+  photo     String?
+  
+  teamId    Int
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+}
+
+// 3. Model Klasemen (Standings)
+model Standing {
+  id        Int    @id @default(autoincrement())
+  teamId    Int    @unique
+  team      Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  
+  played    Int    @default(0)
+  won       Int    @default(0)
+  drawn     Int    @default(0)
+  lost      Int    @default(0)
+  goalsFor  Int    @default(0) // Gol Memasukkan
+  goalsAgainst Int @default(0) // Gol Kemasukan
+  points    Int    @default(0)
+}
+
+// 4. Model Pertandingan (Schedule & Score Box)
+model Match {
+  id          Int      @id @default(autoincrement())
+  date        DateTime // Tanggal & Jam Main
+  
+  homeTeamId  Int
+  homeTeam    Team     @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  homeScore   Int?     // Null jika belum main (Schedule)
+  
+  awayTeamId  Int
+  awayTeam    Team     @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  awayScore   Int?     // Null jika belum main (Schedule)
+  
+  isFinished  Boolean  @default(false)
+}
